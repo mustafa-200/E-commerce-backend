@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\{LoginController, RegisterController, LogoutController};
 use Illuminate\Support\Facades\Route;
 
@@ -10,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
+
     Route::post('/register', RegisterController::class);
     Route::post('/login', LoginController::class);
 
@@ -17,4 +17,5 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', LogoutController::class);
     });
 
+    require __DIR__ . '/admin.php';
 });

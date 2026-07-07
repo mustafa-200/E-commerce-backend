@@ -40,7 +40,6 @@ class AuthService
     }
 
 
-    
     public function logout($user): void
     {
         $user->currentAccessToken()->delete();
