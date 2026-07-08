@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Category;
+namespace App\Http\Requests\Brand;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class UpdateCategoryRequest extends FormRequest
+class UpdateBrandRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,14 +22,11 @@ class UpdateCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $categoryId = $this->route('category'); // Assuming the route parameter is named 'category'
         return [
-            'parent_id' => ['nullable', 'exists:categories,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'slug' => ['sometimes', 'required', 'string', Rule::unique('categories', 'slug')->ignore($categoryId)],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'slug' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

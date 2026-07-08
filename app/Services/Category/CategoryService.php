@@ -32,7 +32,7 @@ class CategoryService
         if (isset($data['slug'])) {
             $data['slug'] = $this->generateUniqueSlug($data['slug'], $category->id);
         }
-
+        
         if (isset($data['image'])) {
             if ($category->image) {
                 Storage::disk('public')->delete($category->image);
@@ -41,7 +41,6 @@ class CategoryService
         }
 
         $category->update($data);
-
         return $category;
     }
 
@@ -50,9 +49,7 @@ class CategoryService
         $category->delete();
     }
 
-    /**
-     * يحول أي نص لـ Slug نظيف، ويتأكد إنه فريد
-     */
+    
     private function generateUniqueSlug(string $value, ?int $ignoreId = null): string
     {
         $slug = Str::slug($value);

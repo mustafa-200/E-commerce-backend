@@ -32,4 +32,15 @@ class StoreCategoryRequest extends FormRequest
             'is_active' => ['nullable', 'boolean'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'اسم التصنيف مطلوب.',
+            'image.image' => 'الملف المرفوع لازم يكون صورة.',
+            'image.max' => 'حجم الصورة أكبر من المسموح (2 ميجا).',
+        ];
+    }
+
+    
 }
