@@ -19,7 +19,29 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
     })
-    
+
+    ->withExceptions(function (Exceptions $exceptions) {
+
+        $exceptions->render(function (\Illuminate\Database\UniqueConstraintViolationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'القيمة المدخلة مستخدمة من قبل، برجاء استخدام قيمة مختلفة.',
+                ], 409);
+            }
+        });
+
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, $request) {
+            if ($request->is('api/*') && $e->getCode() === '23000') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'لا يمكن إتمام هذا الإجراء بسبب ارتباط البيانات ببيانات أخرى.',
+                ], 409);
+            }
+        });
+
+    })
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
