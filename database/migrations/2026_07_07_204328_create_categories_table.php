@@ -23,7 +23,8 @@ return new class extends Migration
             $table->string('slug')->unique();
 
             $table->string('image')->nullable();
-            $table->text('  ')->nullable();
+            $table->text('description')->nullable();
+            
 
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
