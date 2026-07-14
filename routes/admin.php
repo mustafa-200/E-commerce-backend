@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductVariantController;
+use App\Http\Controllers\Admin\OrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
@@ -32,5 +33,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('variants/{variant}', [ProductVariantController::class, 'show']);
     Route::put('variants/{variant}', [ProductVariantController::class, 'update']);
     Route::delete('variants/{variant}', [ProductVariantController::class, 'destroy']);
+
+    Route::get('orders', [OrderController::class, 'index']);
+    Route::get('orders/{orderId}', [OrderController::class, 'show']);
+    Route::put('orders/{orderId}/status', [OrderController::class, 'updateStatus']);
 
 });

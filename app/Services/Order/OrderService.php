@@ -4,6 +4,7 @@ namespace App\Services\Order;
 
 use App\Enums\OrderStatus;
 use App\Exceptions\OutOfStockAtCheckoutException;
+use App\Exceptions\InvalidOrderStatusTransitionException;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
@@ -114,6 +115,48 @@ class OrderService
         ->latest()
         ->paginate(10);
 }
+
+    public function listAll(?string $status = null)
+    {
+        return Order::with(['user', 'items'])
+            ->when($status, fn($q) => $q->where('order_status', $status))
+            ->latest()
+            ->paginate(15);
+    }
+
+    public function findWithDetails(int $orderId): Order
+    {
+        return Order::with(['items', 'address', 'statusHistories', 'user'])
+            ->findOrFail($orderId);
+    }
+
+    public function updateStatus(Order $order, string $newStatus, ?string $note, ?int $adminId): Order
+    {
+        $terminalStatuses = [OrderStatus::Delivered->value, OrderStatus::Cancelled->value];
+
+        if (in_array($order->order_status, $terminalStatuses)) {
+            throw new InvalidOrderStatusTransitionException(
+                "لا يمكن تغيير حالة الطلب بعد أن أصبحت \"{$order->order_status}\"."
+            );
+        }
+
+        if ($order->order_status === $newStatus) {
+            throw new InvalidOrderStatusTransitionException('الطلب أصلًا في هذه الحالة.');
+        }
+
+        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
+            $order->update(['order_status' => $newStatus]);
+
+            OrderStatusHistory::create([
+                'order_id' => $order->id,
+                'status' => $newStatus,
+                'note' => $note,
+                'changed_by' => $adminId,
+            ]);
+
+            return $order->load('statusHistories');
+        });
+    }
 
 public function findForUser(int $orderId, int $userId): Order
 {
