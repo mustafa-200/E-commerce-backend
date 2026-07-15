@@ -7,18 +7,26 @@ use App\Http\Controllers\Customer\{
     OrderController,
     ProductController,
     CategoryController,
-    BrandController
+    BrandController,
+    SliderController,
+    SettingController
 };
 use Illuminate\Support\Facades\Route;
 
+/* ======================= Public Routes ======================= */
 // Public Storefront Routes —without any Middleware
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('brands', [BrandController::class, 'index']);
 Route::get('products', [ProductController::class, 'index']);
 Route::get('products/{slug}', [ProductController::class, 'show']);
 
-// Authenticated Customer Routes —with Middleware
+/* ======================= Setting Routes ======================= */
+Route::get('sliders', [SliderController::class, 'index']);
+Route::get('settings', [SettingController::class, 'index']);
 
+
+/* ======================= Customer Routes ======================= */
+// Authenticated Customer Routes —with Middleware
 Route::middleware('resolve.user')->group(function () {
     Route::get('cart', [CartController::class, 'show']);
     Route::post('cart', [CartController::class, 'store']);
