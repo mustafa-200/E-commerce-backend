@@ -22,7 +22,7 @@ return [
     'allowed_origins' => [
         'http://localhost:5173',
         'http://localhost:4173',
-        'https://fakher-store-eta.vercel.app/',
+        'https://fakher-store-eta.vercel.app',
         ],
 
     'allowed_origins_patterns' => [],
