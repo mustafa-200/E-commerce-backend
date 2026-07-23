@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173','http://localhost:4173','https://fakher-store.vercel.app'],
+    'allowed_origins' => ['http://localhost:5173','http://localhost:4173','https://fakher-store-up.vercel.app'],
 
     'allowed_origins_patterns' => [],
 
