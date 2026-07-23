@@ -6,7 +6,8 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Models\User;
-use App\Exceptions\InsufficientStockException;
+use App\Exceptions\InsufficientStockException;  
+use Illuminate\Support\Facades\DB;
 
 class CartService
 {
@@ -75,33 +76,46 @@ class CartService
      */
     public function mergeGuestCartIntoUser(string $sessionId, User $user): void
     {
-        $guestCart = Cart::where('session_id', $sessionId)->first();
+        $guestCart = Cart::with('items.variant')->where('session_id', $sessionId)->first();
 
-        if (!$guestCart) {
-            return; // مفيش سلة Guest أصلاً، مفيش داعي نعمل حاجة
+        if (!$guestCart || $guestCart->items->isEmpty()) {
+            return; // مفيش سلة Guest أصلاً، أو فاضية، مفيش داعي نعمل حاجة
         }
 
-        $userCart = Cart::firstOrCreate(['user_id' => $user->id]);
+        DB::transaction(function () use ($guestCart, $user) {
+            $userCart = Cart::firstOrCreate(['user_id' => $user->id]);
 
-        foreach ($guestCart->items as $guestItem) {
-            $existingItem = $userCart->items()
-                ->where('product_variant_id', $guestItem->product_variant_id)
-                ->first();
+            foreach ($guestCart->items as $guestItem) {
+                // لو الـ Variant اتمسح نهائيًا (مش Soft Delete بس)، تجاهل السطر ده بأمان
+                if (!$guestItem->variant) {
+                    continue;
+                }
 
-            if ($existingItem) {
-                $existingItem->update([
-                    'quantity' => $existingItem->quantity + $guestItem->quantity,
-                ]);
-            } else {
-                $userCart->items()->create([
-                    'product_variant_id' => $guestItem->product_variant_id,
-                    'quantity' => $guestItem->quantity,
-                ]);
+                $existingItem = $userCart->items()
+                    ->where('product_variant_id', $guestItem->product_variant_id)
+                    ->first();
+
+                $mergedQuantity = $existingItem
+                    ? $existingItem->quantity + $guestItem->quantity
+                    : $guestItem->quantity;
+
+                // لازم نتأكد من المخزون هنا برضو، وإلا الدمج ممكن يخلي
+                // الكمية النهائية تتخطى المتاح فعليًا في المخزن
+                $this->ensureStockAvailable($guestItem->variant, $mergedQuantity);
+
+                if ($existingItem) {
+                    $existingItem->update(['quantity' => $mergedQuantity]);
+                } else {
+                    $userCart->items()->create([
+                        'product_variant_id' => $guestItem->product_variant_id,
+                        'quantity' => $guestItem->quantity,
+                    ]);
+                }
             }
-        }
 
-        $guestCart->items()->delete();
-        $guestCart->delete();
+            $guestCart->items()->delete();
+            $guestCart->delete();
+        });
     }
 
     private function ensureStockAvailable(ProductVariant $variant, int $requestedQuantity): void
@@ -111,5 +125,25 @@ class CartService
                 "الكمية المطلوبة غير متوفرة. المتاح حاليًا: {$variant->stock_quantity} قطعة فقط."
             );
         }
+    }
+
+    /**
+     * يتأكد إن الـ CartItem ده فعليًا بتاع نفس الشخص (مسجل أو Guest)
+     * اللي بعت الـ Request. ده اللي بيمنع أي حد يعدل/يمسح سلة حد تاني
+     * (IDOR) بمجرد ما يعرف/يخمن رقم الـ CartItem.
+     */
+    public function itemBelongsTo(CartItem $item, ?int $userId, ?string $sessionId): bool
+    {
+        $cart = $item->cart;
+
+        if (!$cart) {
+            return false;
+        }
+
+        if ($userId) {
+            return $cart->user_id === $userId;
+        }
+
+        return $sessionId !== null && $cart->session_id === $sessionId;
     }
 }

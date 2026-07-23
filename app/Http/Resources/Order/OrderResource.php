@@ -18,8 +18,8 @@ class OrderResource extends JsonResource
             'discount' => (float) $this->discount,
             'shipping_cost' => (float) $this->shipping_cost,
             'total' => (float) $this->total,
-            'address' => new OrderAddressResource($this->whenLoaded('address')),
-            'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            'address' => $this->whenLoaded('address',fn() => new OrderAddressResource($this->address)),
+            'items' => $this->whenLoaded('items',fn() => OrderItemResource::collection($this->items)),
             'status_history' => $this->whenLoaded('statusHistories', function () {
                 return $this->statusHistories->map(fn($h) => [
                     'status' => $h->status,

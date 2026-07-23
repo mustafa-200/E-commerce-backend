@@ -13,8 +13,7 @@ class CheckoutController extends Controller
     public function __construct(
         protected CartService $cartService,
         protected OrderService $orderService
-    ) {
-    }
+    ) {}  // 
 
     public function store(CheckoutRequest $request)
     {

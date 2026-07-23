@@ -9,9 +9,13 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SliderController;
+use App\Http\Controllers\Admin\StatsController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    /* ======================= Stats Routes ======================= */
+    Route::get('stats', [StatsController::class, 'index']);
+
     /* ======================= Category Routes ======================= */
     Route::get('categories/tree', [CategoryController::class, 'tree']);
     Route::apiResource('categories', CategoryController::class);
@@ -29,6 +33,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::apiResource('products', ProductController::class);
     Route::post('products/{product}/images', [ProductImageController::class, 'store']);
     Route::delete('product-images/{productImage}', [ProductImageController::class, 'destroy']);
+
+    Route::patch('products/{product}/toggle-featured', [ProductController::class, 'toggleFeatured']);
 
     Route::get('products/{product}/variants', [ProductVariantController::class, 'index']);
     Route::post('products/{product}/variants', [ProductVariantController::class, 'store']);

@@ -38,7 +38,7 @@ class ProductController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم إنشاء المنتج بنجاح',
-            'data' => new ProductResource($product),
+            'data' => new ProductResource($product->load(['category', 'brand'])),
         ], 201);
     }
 
@@ -47,7 +47,9 @@ class ProductController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم جلب المنتج بنجاح',
-            'data' => new ProductResource($product->load(['category', 'brand'])),
+            'data' => new ProductResource(
+                $product->load(['category', 'brand', 'variants.attributeValues.attribute', 'images'])
+            ),
         ]);
     }
 
@@ -58,7 +60,7 @@ class ProductController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم تحديث المنتج بنجاح',
-            'data' => new ProductResource($product),
+            'data' => new ProductResource($product->load(['category', 'brand'])),
         ]);
     }
 
@@ -69,6 +71,17 @@ class ProductController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم حذف المنتج بنجاح',
+        ]);
+    }
+
+    public function toggleFeatured(Product $product)
+    {
+        $product->update(['is_featured' => !$product->is_featured]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تحديث حالة التمييز بنجاح',
+            'data' => new ProductResource($product->load(['category', 'brand'])),
         ]);
     }
 }

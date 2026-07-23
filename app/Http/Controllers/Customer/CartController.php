@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cart\AddToCartRequest;
 use App\Http\Requests\Cart\UpdateCartItemRequest;
@@ -52,22 +53,68 @@ class CartController extends Controller
 
     public function update(UpdateCartItemRequest $request, CartItem $cartItem)
     {
-        $this->cartService->updateItemQuantity($cartItem, $request->validated()['quantity']);
+        $this->authorizeCartItem($request, $cartItem);
+
+        $this->cartService->updateItemQuantity(
+            $cartItem,
+            $request->validated()['quantity']
+        );
 
         return response()->json([
             'status' => 'success',
             'message' => 'تم تحديث الكمية بنجاح',
-            'data' => new CartResource($cartItem->cart->fresh(['items.variant.product', 'items.variant.attributeValues'])),
+            'data' => new CartResource(
+                $cartItem->cart->fresh([
+                    'items.variant.product',
+                    'items.variant.attributeValues',
+                ])
+            ),
         ]);
     }
-
-    public function destroy(CartItem $cartItem)
+    public function destroy(Request $request, CartItem $cartItem)
     {
+        $this->authorizeCartItem($request, $cartItem);
+
         $this->cartService->removeItem($cartItem);
 
         return response()->json([
             'status' => 'success',
             'message' => 'تم حذف المنتج من السلة بنجاح',
+        ]);
+    }
+
+    /**
+     * يمنع أي مستخدم أو Guest من تعديل أو حذف CartItem لا يخصه.
+     */
+    private function authorizeCartItem(Request $request, CartItem $cartItem): void
+    {
+        $isOwner = $this->cartService->itemBelongsTo(
+            $cartItem,
+            $request->user()?->id,
+            $request->header('X-Guest-Session-ID')
+        );
+
+        abort_if(
+            !$isOwner,
+            403,
+            'غير مصرح لك بالتعامل مع هذا العنصر.'
+        );
+    }
+
+    public function merge(Request $request)
+    {
+        $sessionId = $request->header('X-Guest-Session-ID');
+
+        if ($sessionId) {
+            $this->cartService->mergeGuestCartIntoUser($sessionId, $request->user());
+        }
+
+        $cart = $this->cartService->getCart($request->user()->id, null);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم دمج السلة بنجاح',
+            'data' => $cart ? new CartResource($cart) : null,
         ]);
     }
 }

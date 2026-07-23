@@ -57,4 +57,19 @@ class Product extends Model
     {
         return $this->hasMany(ProductVariant::class);
     }
+
+    protected static function booted(): void
+    {
+        // cascadeOnDelete على مستوى الداتابيز بيتفعل بس وقت DELETE حقيقي،
+        // وبما إن Product بيستخدم SoftDeletes، لازم نعمل الـ Cascade
+        // يدويًا هنا، وإلا الـ Variants تفضل is_active = true رغم
+        // إن المنتج بتاعها اتمسح (Soft Delete) بالفعل.
+        static::deleting(function (Product $product) {
+            if ($product->isForceDeleting()) {
+                $product->variants()->forceDelete();
+            } else {
+                $product->variants()->delete();
+            }
+        });
+    }
 }

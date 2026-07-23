@@ -8,7 +8,10 @@ class CartResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $items = $this->items;
+        // لو الـ Variant اتمسح نهائيًا (Force Delete)، withTrashed() مش
+        // هترجعه، فـ $item->variant هترجع null. نستبعد السطور دي من
+        // الحساب عشان مانعملش Crash على null->sale_price
+        $items = $this->items->filter(fn($item) => $item->variant !== null);
 
         return [
             'id' => $this->id,

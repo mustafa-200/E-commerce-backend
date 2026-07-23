@@ -19,10 +19,13 @@ class ProductVariantResource extends JsonResource
             'is_active'     => $this->is_active,
             'attributes' => $this->whenLoaded('attributeValues', function () {
                 return $this->attributeValues->map(fn($av) => [
+                    'attribute_id' => $av->attribute_id,
                     'attribute' => $av->attribute->name,
+                    'value_id' => $av->id,
                     'value' => $av->value,
                 ]);
             }),
+
         ];
     }
 }

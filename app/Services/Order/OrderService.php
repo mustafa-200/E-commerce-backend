@@ -21,7 +21,9 @@ class OrderService
             throw new OutOfStockAtCheckoutException('السلة فارغة، لا يمكن إتمام الطلب.');
         }
 
-        $address = Address::findOrFail($addressId);
+        $address = Address::where('id', $addressId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
 
         return DB::transaction(function () use ($cart, $address, $paymentMethod, $userId) {
 
@@ -29,9 +31,12 @@ class OrderService
             $orderItemsData = [];
 
             foreach ($cart->items as $cartItem) {
-                $variant = ProductVariant::where('id', $cartItem->product_variant_id)
+                $variant = ProductVariant::with([
+                    'product',
+                    'attributeValues',
+                ])
                     ->lockForUpdate()
-                    ->first();
+                    ->find($cartItem->product_variant_id);
 
                 if (!$variant || $variant->stock_quantity < $cartItem->quantity) {
                     throw new OutOfStockAtCheckoutException(
@@ -90,7 +95,7 @@ class OrderService
             OrderStatusHistory::create([
                 'order_id' => $order->id,
                 'status' => OrderStatus::Pending->value,
-                'changed_by' => null,
+                'changed_by' => $userId,
             ]);
 
             $cart->items()->delete();
@@ -109,60 +114,115 @@ class OrderService
     }
 
     public function listForUser(int $userId)
-{
-    return Order::where('user_id', $userId)
-        ->with(['items', 'address'])
-        ->latest()
-        ->paginate(10);
-}
+    {
+        return Order::where('user_id', $userId)
+            ->with(['items', 'address'])
+            ->latest()
+            ->paginate(10);
+    }
+
+    public function findForUser(int $orderId, int $userId): Order
+    {
+        return Order::where('id', $orderId)
+            ->where('user_id', $userId)
+            ->with(['items', 'address', 'statusHistories'])
+            ->firstOrFail();
+    }
 
     public function listAll(?string $status = null)
     {
-        return Order::with(['user', 'items'])
-            ->when($status, fn($q) => $q->where('order_status', $status))
+        return Order::with([
+            'user',
+            'address',
+            'items',
+        ])
+            ->when($status, function ($query) use ($status) {
+                $query->where('order_status', $status);
+            })
             ->latest()
             ->paginate(15);
     }
 
     public function findWithDetails(int $orderId): Order
     {
-        return Order::with(['items', 'address', 'statusHistories', 'user'])
-            ->findOrFail($orderId);
+        return Order::with([
+            'user',
+            'address',
+            'items',
+            'statusHistories',
+        ])->findOrFail($orderId);
     }
 
-    public function updateStatus(Order $order, string $newStatus, ?string $note, ?int $adminId): Order
-    {
-        $terminalStatuses = [OrderStatus::Delivered->value, OrderStatus::Cancelled->value];
+    private const TRANSITIONS = [
 
-        if (in_array($order->order_status, $terminalStatuses)) {
+        OrderStatus::Pending->value => [
+            OrderStatus::Confirmed->value,
+            OrderStatus::Cancelled->value,
+        ],
+
+        OrderStatus::Confirmed->value => [
+            OrderStatus::Preparing->value,
+            OrderStatus::Cancelled->value,
+        ],
+
+        OrderStatus::Preparing->value => [
+            OrderStatus::Packed->value,
+        ],
+
+        OrderStatus::Packed->value => [
+            OrderStatus::Shipped->value,
+        ],
+
+        OrderStatus::Shipped->value => [
+            OrderStatus::Delivered->value,
+        ],
+
+        OrderStatus::Delivered->value => [],
+
+        OrderStatus::Cancelled->value => [],
+    ];
+
+
+    public function updateStatus(
+        Order $order,
+        string $status,
+        ?string $note,
+        int $changedBy
+    ): Order {
+
+        $currentStatus = $order->order_status;
+
+        if (
+            !in_array(
+                $status,
+                self::TRANSITIONS[$currentStatus] ?? []
+            )
+        ) {
             throw new InvalidOrderStatusTransitionException(
-                "لا يمكن تغيير حالة الطلب بعد أن أصبحت \"{$order->order_status}\"."
+                "لا يمكن تحويل الطلب من {$currentStatus} إلى {$status}"
             );
         }
 
-        if ($order->order_status === $newStatus) {
-            throw new InvalidOrderStatusTransitionException('الطلب أصلًا في هذه الحالة.');
-        }
+        DB::transaction(function () use ($order, $status, $note, $changedBy) {
 
-        return DB::transaction(function () use ($order, $newStatus, $note, $adminId) {
-            $order->update(['order_status' => $newStatus]);
+            $order->update([
+                'order_status' => $status,
+            ]);
 
             OrderStatusHistory::create([
                 'order_id' => $order->id,
-                'status' => $newStatus,
+                'status' => $status,
                 'note' => $note,
-                'changed_by' => $adminId,
+                'changed_by' => $changedBy,
             ]);
 
-            return $order->load('statusHistories');
         });
-    }
 
-public function findForUser(int $orderId, int $userId): Order
-{
-    return Order::where('id', $orderId)
-        ->where('user_id', $userId)
-        ->with(['items', 'address', 'statusHistories'])
-        ->firstOrFail();
-}
+        return $order->fresh([
+            'user',
+            'address',
+            'items',
+            'statusHistories',
+        ]);
+    }
 }
