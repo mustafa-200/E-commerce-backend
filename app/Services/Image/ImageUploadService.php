@@ -25,7 +25,7 @@ class ImageUploadService
 
         Storage::disk('public')->put(
             $path,
-            (string) $image->toJpeg(quality: $quality)
+            (string) $image->toWebp(quality: $quality)
         );
 
         return $path;
@@ -54,7 +54,7 @@ class ImageUploadService
 
         Storage::disk('public')->put(
             $path,
-            (string) $image->toJpeg(quality: $quality)
+            (string) $image->toWebp(quality: $quality)
         );
 
         return $path;
