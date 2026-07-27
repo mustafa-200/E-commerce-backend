@@ -23,9 +23,13 @@ return [
         'http://localhost:5173',
         'http://localhost:4173',
         'https://fakher-store-eta.vercel.app',
-        ],
+        'https://fakher-chi.vercel.app',
+        'https://fakher-store-psq7heixe-mustafasayed-8838s-projects.vercel.app',
+    ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://fakher-store-.*\.vercel\.app$#',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -33,6 +37,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];
