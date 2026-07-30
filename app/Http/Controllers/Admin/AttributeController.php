@@ -17,9 +17,9 @@ class AttributeController extends Controller
     {
     }
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        $attributes = $this->attributeService->list();
+        $attributes = $this->attributeService->list($request->integer('category_id') ?: null);
 
         return response()->json([
             'status' => 'success',
@@ -44,7 +44,7 @@ class AttributeController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم جلب الخاصية بنجاح',
-            'data' => new AttributeResource($attribute->load('values')),
+            'data' => new AttributeResource($attribute->load(['values', 'category'])),
         ]);
     }
 

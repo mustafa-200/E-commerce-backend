@@ -12,6 +12,13 @@ class AttributeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'category_id' => $this->category_id,
+            'category' => $this->whenLoaded('category', function () {
+                return $this->category ? [
+                    'id' => $this->category->id,
+                    'name' => $this->category->name,
+                ] : null;
+            }),
             'values' => $this->whenLoaded('values', function () {
                 return $this->values->map(fn($v) => [
                     'id' => $v->id,

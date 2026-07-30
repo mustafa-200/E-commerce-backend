@@ -25,6 +25,7 @@ class StoreAttributeRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string'],
+            'category_id' => ['nullable', 'exists:categories,id'],
             'values' => ['nullable', 'array'],
             'values.*' => ['string', 'max:255'],
         ];
