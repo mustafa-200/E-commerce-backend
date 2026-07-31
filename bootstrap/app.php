@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\IsAdmin::class,
             'resolve.user' => \App\Http\Middleware\ResolveAuthenticatedUser::class,
         ]);
+
+        // Railway (وأي منصة SSL termination) بتبعت الريكوست لـ Laravel كـ http من جوه
+        // فلازم نثق في الـ proxy عشان يفهم إن الأصل https ويولّد روابط صح
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
