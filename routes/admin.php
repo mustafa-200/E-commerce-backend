@@ -45,6 +45,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('orders', [OrderController::class, 'index']);
     Route::get('orders/{orderId}', [OrderController::class, 'show']);
     Route::put('orders/{orderId}/status', [OrderController::class, 'updateStatus']);
+    Route::patch('/orders/{order}/shipping-cost', [OrderController::class, 'updateShippingCost']);
 
     /* ======================= Setting Routes ======================= */
     Route::apiResource('sliders', SliderController::class)->except(['show']);

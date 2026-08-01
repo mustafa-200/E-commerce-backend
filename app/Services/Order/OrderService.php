@@ -225,4 +225,33 @@ class OrderService
             'statusHistories',
         ]);
     }
+
+    public function updateShippingCost(Order $order, float $shippingCost): Order
+    {
+        if (in_array($order->order_status, [
+            OrderStatus::Delivered->value,
+            OrderStatus::Cancelled->value,
+        ])) {
+            throw new InvalidOrderStatusTransitionException(
+                'لا يمكن تعديل سعر الشحن بعد اكتمال الطلب أو إلغاؤه.'
+            );
+        }
+
+        return DB::transaction(function () use ($order, $shippingCost) {
+
+            $newTotal = $order->subtotal - $order->discount + $shippingCost;
+
+            $order->update([
+                'shipping_cost' => $shippingCost,
+                'total' => $newTotal,
+            ]);
+
+            return $order->fresh([
+                'user',
+                'address',
+                'items',
+                'statusHistories',
+            ]);
+        });
+    }
 }

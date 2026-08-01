@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\UpdateOrderStatusRequest;
+use App\Http\Requests\Order\UpdateShippingCostRequest;
 use App\Http\Resources\Order\OrderResource;
 use App\Services\Order\OrderService;
 use Illuminate\Http\Request;
@@ -55,6 +56,20 @@ class OrderController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم تحديث حالة الطلب بنجاح',
+            'data' => new OrderResource($order),
+        ]);
+    }
+
+    public function updateShippingCost(UpdateShippingCostRequest $request, int $orderId)
+    {
+        $order = $this->orderService->findWithDetails($orderId);
+        $order = $this->orderService->updateShippingCost(
+            $order,
+            (float) $request->validated()['shipping_cost']
+        );
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تحديث سعر الشحن بنجاح',
             'data' => new OrderResource($order),
         ]);
     }
